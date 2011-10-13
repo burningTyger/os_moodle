@@ -1,0 +1,4 @@
+#!/bin/bash
+# This is a simple deploy hook executed after your application is stopped
+# and the new files are built/deployed.  This script gets executed 
+# directly, so it could be python, php, ruby, etc.
