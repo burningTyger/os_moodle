@@ -30,6 +30,7 @@ M.form.initShowAdvanced = function(Y, config) {
             if (this._advButtons.size() > 0) {
                 this._stateInput = new Y.NodeList(document.getElementsByName('mform_showadvanced_last'));
                 this._advButtons.on('click', this.switchState, this);
+                this._advButtons.set('type', 'button');
             }
         },
         /**
@@ -277,7 +278,17 @@ M.form.initFormDependencies = function(Y, formid, dependencies) {
                     } else if (this.getAttribute('type').toLowerCase() == 'checkbox' && !Y.Node.getDOMNode(this).checked) {
                         return;
                     }
-                    lock = lock || this.get('value') == value;
+                    //check for filepicker status
+                    if (this.getAttribute('class').toLowerCase() == 'filepickerhidden') {
+                        var elementname = this.getAttribute('name');
+                        if (elementname && M.form_filepicker.instances[elementname].fileadded) {
+                            lock = false;
+                        } else {
+                            lock = true;
+                        }
+                    } else {
+                        lock = lock || this.get('value') == value;
+                    }
                 });
                 return {
                     lock : lock,
@@ -298,7 +309,17 @@ M.form.initFormDependencies = function(Y, formid, dependencies) {
                     } else if (this.getAttribute('type').toLowerCase() == 'checkbox' && !Y.Node.getDOMNode(this).checked) {
                         return;
                     }
-                    lock = lock || this.get('value') != value;
+                    //check for filepicker status
+                    if (this.getAttribute('class').toLowerCase() == 'filepickerhidden') {
+                        var elementname = this.getAttribute('name');
+                        if (elementname && M.form_filepicker.instances[elementname].fileadded) {
+                            lock = true;
+                        } else {
+                            lock = false;
+                        }
+                    } else {
+                        lock = lock || this.get('value') != value;
+                    }
                 });
                 return {
                     lock : lock,

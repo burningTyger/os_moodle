@@ -46,15 +46,24 @@ class core_webservice_renderer extends plugin_renderer_base {
         $table->cellspacing = 0;
         $table->cellpadding = 0;
 
+        // LTR/RTL support, for drawing button arrows in the right direction
+        if (right_to_left()) {
+            $addarrow = '▶';
+            $removearrow = '◀';
+        } else {
+            $addarrow = '◀';
+            $removearrow = '▶';
+        }
+
         //create the add and remove button
         $addinput = html_writer::empty_tag('input',
                         array('name' => 'add', 'id' => 'add', 'type' => 'submit',
-                            'value' => '◀' . ' ' . get_string('add'),
+                            'value' => $addarrow . ' ' . get_string('add'),
                             'title' => get_string('add')));
         $addbutton = html_writer::tag('div', $addinput, array('id' => 'addcontrols'));
         $removeinput = html_writer::empty_tag('input',
                         array('name' => 'remove', 'id' => 'remove', 'type' => 'submit',
-                            'value' => '▶' . ' ' . get_string('remove'),
+                            'value' => $removearrow . ' ' . get_string('remove'),
                             'title' => get_string('remove')));
         $removebutton = html_writer::tag('div', $removeinput, array('id' => 'removecontrols'));
 
@@ -320,7 +329,11 @@ class core_webservice_renderer extends plugin_renderer_base {
                     $validuntil = date("F j, Y"); //TODO: language support (look for moodle function)
                 }
 
-                $row = array($token->token, $token->name, $validuntil, $creatoratag, $reset);
+                $tokenname = $token->name;
+                if (!$token->enabled) { //that is the (1 token-1ws) related ws is not enabled.
+                    $tokenname = '<span class="dimmed_text">'.$token->name.'</span>';
+                }
+                $row = array($token->token, $tokenname, $validuntil, $creatoratag, $reset);
 
                 if ($documentation) {
                     $doclink = new moodle_url('/webservice/wsdoc.php',

@@ -347,7 +347,9 @@ class block_manager {
         }
         $this->check_is_loaded();
         $this->ensure_content_created($region, $output);
-        if ($this->page->user_is_editing() && $this->page->user_can_edit_blocks()) {
+        // if ($this->page->user_is_editing() && $this->page->user_can_edit_blocks()) {
+        // Mark Nielsen's patch - part 1
+        if ($this->page->user_is_editing() && $this->page->user_can_edit_blocks() && $this->movingblock) {
             // If editing is on, we need all the block regions visible, for the
             // move blocks UI.
             return true;
@@ -1624,7 +1626,10 @@ function generate_page_type_patterns($pagetype, $parentcontext = null, $currentc
                     $libfile = $directory.'/lib.php';
                     if (file_exists($libfile)) {
                         require_once($libfile);
-                        $function = $pluginname.'_page_type_list';
+                        $function = $possiblecomponent.'_'.$pluginname.'_page_type_list';
+                        if (!function_exists($function)) {
+                            $function = $pluginname.'_page_type_list';
+                        }
                         if (function_exists($function)) {
                             if ($patterns = $function($pagetype, $parentcontext, $currentcontext)) {
                                 break;
