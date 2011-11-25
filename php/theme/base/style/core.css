@@ -77,7 +77,7 @@ a.autolink.glossary:hover {cursor: help;}
 img.resize {height: 1em;width: 1em;}
 .block img.resize,
 .breadcrumb img.resize {height: 0.9em;width: 0.8em;}
-img.icon {height:16px;vertical-align:middle;width:16px;}
+img.icon {height:16px;vertical-align:middle;width:16px;padding-right:4px;}
 img.iconsmall {height:11px;margin-right:1px;vertical-align:middle;width:11px;}
 img.iconhelp {height:17px;margin-right:4px;vertical-align:middle;width:17px;}
 img.icontoggle {height:17px;vertical-align:middle;width:50px;}
@@ -643,6 +643,7 @@ body.tag .managelink {padding: 5px;}
 #page-enrol-users .enrol_user_buttons .enrolusersbutton div,
 #page-enrol-users .enrol_user_buttons .enrolusersbutton form {display:inline;}
 #page-enrol-users .enrol_user_buttons .enrolusersbutton input {padding-left:6px;padding-right:6px;}
+#page-enrol-users.dir-rtl .col_userdetails .subfield_picture {float: right;}
 
 /**
 * Overide for RTL layout
@@ -655,6 +656,9 @@ body.tag .managelink {padding: 5px;}
 .dir-rtl .mform .fitem .fitemtitle {float:right;}
 .dir-rtl .loginbox .loginform .form-label {float:right;text-align:left;}
 .dir-rtl .loginbox .loginform .form-input {text-align: right;}
+.dir-rtl .yui3-menu-hidden {left: 0px;}
+#page-admin-roles-define.dir-rtl #rolesform .felement {margin-right: 180px;}
+#page-message-edit.dir-rtl table.generaltable th.c0 {text-align: right;}
 
 /**
  * Backup

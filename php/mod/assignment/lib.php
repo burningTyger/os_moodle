@@ -756,9 +756,16 @@ class assignment_base {
                 $offset = required_param('offset', PARAM_INT);
                 $nextid = required_param('nextid', PARAM_INT);
                 $id = required_param('id', PARAM_INT);
-                $offset = (int)$offset+1;
-                //$this->display_submission($offset+1 , $nextid);
-                redirect('submissions.php?id='.$id.'&userid='. $nextid . '&mode=single&offset='.$offset);
+                $filter = optional_param('filter', self::FILTER_ALL, PARAM_INT);
+
+                if ($mode == 'next' || $filter !== self::FILTER_REQUIRE_GRADING) {
+                    $offset = (int)$offset+1;
+                }
+                $redirect = new moodle_url('submissions.php',
+                        array('id' => $id, 'offset' => $offset, 'userid' => $nextid,
+                        'mode' => 'single', 'filter' => $filter));
+
+                redirect($redirect);
                 break;
 
             case 'singlenosave':
