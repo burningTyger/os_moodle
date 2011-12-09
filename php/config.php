@@ -70,7 +70,6 @@ $CFG->dboptions = array(
 // on the next line if you are creating config.php manually.
 //
 // $CFG->passwordsaltmain = 'a_very_long_random_string_of_characters#@6&*1';
-$CFG->passwordsaltmain = 'j1gnhckjgm8o20o2r0jlf9n1q4llhc';
 // After changing the main salt you have to copy old value into one
 // of the following settings - this allows migration to the new salt
 // during the next login of each user.
