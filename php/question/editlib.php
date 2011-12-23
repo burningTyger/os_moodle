@@ -791,16 +791,22 @@ class question_bank_question_text_row extends question_bank_row_base {
     }
 
     protected function display_content($question, $rowclasses) {
-        $text = format_text($question->questiontext, $question->questiontextformat,
-                $this->formatoptions, $this->qbank->get_courseid());
+        $text = question_rewrite_questiontext_preview_urls($question->questiontext,
+                $question->contextid, 'question', $question->id);
+        $text = format_text($text, $question->questiontextformat,
+                $this->formatoptions);
         if ($text == '') {
             $text = '&#160;';
         }
         echo $text;
     }
 
+    public function get_extra_joins() {
+        return array('qc' => 'JOIN {question_categories} qc ON qc.id = q.category');
+    }
+
     public function get_required_fields() {
-        return array('q.questiontext', 'q.questiontextformat');
+        return array('q.id', 'q.questiontext', 'q.questiontextformat', 'qc.contextid');
     }
 }
 
@@ -959,7 +965,7 @@ class question_bank_view {
     }
 
     /**
-     * Deal with a sort name of the forum columnname, or colname_subsort by
+     * Deal with a sort name of the form columnname, or colname_subsort by
      * breaking it up, validating the bits that are presend, and returning them.
      * If there is no subsort, then $subsort is returned as ''.
      * @return array array($colname, $subsort).
@@ -1096,14 +1102,14 @@ class question_bank_view {
         $sorts = array();
         foreach ($this->sort as $sort => $order) {
             list($colname, $subsort) = $this->parse_subsort($sort);
-            $sorts[] = $this->knowncolumntypes[$colname]->sort_expression($order < 0, $subsort);
+            $sorts[] = $this->requiredcolumns[$colname]->sort_expression($order < 0, $subsort);
         }
 
     /// Build the where clause.
-        $tests = array('parent = 0');
+        $tests = array('q.parent = 0');
 
         if (!$showhidden) {
-            $tests[] = 'hidden = 0';
+            $tests[] = 'q.hidden = 0';
         }
 
         if ($recurse) {

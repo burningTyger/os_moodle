@@ -171,16 +171,21 @@ abstract class moodleform_mod extends moodleform {
             }
         }
 
-        if ($mform->elementExists('groupmode') and !$mform->elementExists('groupmembersonly') and empty($COURSE->groupmodeforce)) {
-            $mform->disabledIf('groupingid', 'groupmode', 'eq', NOGROUPS);
+        // Don't disable/remove groupingid if it is currently set to something,
+        // otherwise you cannot turn it off at same time as turning off other
+        // option (MDL-30764)
+        if (empty($this->_cm) || !$this->_cm->groupingid) {
+            if ($mform->elementExists('groupmode') and !$mform->elementExists('groupmembersonly') and empty($COURSE->groupmodeforce)) {
+                $mform->disabledIf('groupingid', 'groupmode', 'eq', NOGROUPS);
 
-        } else if (!$mform->elementExists('groupmode') and $mform->elementExists('groupmembersonly')) {
-            $mform->disabledIf('groupingid', 'groupmembersonly', 'notchecked');
+            } else if (!$mform->elementExists('groupmode') and $mform->elementExists('groupmembersonly')) {
+                $mform->disabledIf('groupingid', 'groupmembersonly', 'notchecked');
 
-        } else if (!$mform->elementExists('groupmode') and !$mform->elementExists('groupmembersonly')) {
-            // groupings have no use without groupmode or groupmembersonly
-            if ($mform->elementExists('groupingid')) {
-                $mform->removeElement('groupingid');
+            } else if (!$mform->elementExists('groupmode') and !$mform->elementExists('groupmembersonly')) {
+                // groupings have no use without groupmode or groupmembersonly
+                if ($mform->elementExists('groupingid')) {
+                    $mform->removeElement('groupingid');
+                }
             }
         }
 
@@ -309,6 +314,35 @@ abstract class moodleform_mod extends moodleform {
             $data['availablefrom'] && $data['availableuntil'] &&
             $data['availablefrom'] > $data['availableuntil']) {
             $errors['availablefrom'] = get_string('badavailabledates', 'condition');
+        }
+
+        // Conditions: Verify that the grade conditions are numbers, and make sense.
+        if (array_key_exists('conditiongradegroup', $data)) {
+            foreach ($data['conditiongradegroup'] as $i => $gradedata) {
+                if ($gradedata['conditiongrademin'] !== '' && !is_numeric($gradedata['conditiongrademin'])) {
+                    $errors["conditiongradegroup[{$i}]"] = get_string('gradesmustbenumeric', 'condition');
+                    continue;
+                }
+                if ($gradedata['conditiongrademax'] !== '' && !is_numeric($gradedata['conditiongrademax'])) {
+                    $errors["conditiongradegroup[{$i}]"] = get_string('gradesmustbenumeric', 'condition');
+                    continue;
+                }
+                if ($gradedata['conditiongrademin'] !== '' && $gradedata['conditiongrademax'] !== '' &&
+                        $gradedata['conditiongrademax'] < $gradedata['conditiongrademin']) {
+                    $errors["conditiongradegroup[{$i}]"] = get_string('badgradelimits', 'condition');
+                    continue;
+                }
+                if ($gradedata['conditiongrademin'] === '' && $gradedata['conditiongrademax'] === '' &&
+                        $gradedata['conditiongradeitemid']) {
+                    $errors["conditiongradegroup[{$i}]"] = get_string('gradeitembutnolimits', 'condition');
+                    continue;
+                }
+                if (($gradedata['conditiongrademin'] !== '' || $gradedata['conditiongrademax'] !== '') &&
+                        !$gradedata['conditiongradeitemid']) {
+                    $errors["conditiongradegroup[{$i}]"] = get_string('gradelimitsbutnoitem', 'condition');
+                    continue;
+                }
+            }
         }
 
         return $errors;
@@ -456,8 +490,6 @@ abstract class moodleform_mod extends moodleform {
             $grouparray[] =& $mform->createElement('static', '', '','% '.get_string('grade_upto','condition').' ');
             $grouparray[] =& $mform->createElement('text', 'conditiongrademax','',array('size'=>3));
             $grouparray[] =& $mform->createElement('static', '', '','%');
-            $mform->setType('conditiongrademin',PARAM_FLOAT);
-            $mform->setType('conditiongrademax',PARAM_FLOAT);
             $group = $mform->createElement('group','conditiongradegroup',
                 get_string('gradecondition', 'condition'),$grouparray);
 

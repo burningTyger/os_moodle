@@ -31,7 +31,7 @@
             'search' => $search,
             'roleid' => $roleid,
             'contextid' => $contextid,
-            'courseid' => $courseid));
+            'id' => $courseid));
 
     if ($contextid) {
         $context = get_context_instance_by_id($contextid, MUST_EXIST);
@@ -135,11 +135,6 @@
 
     $isseparategroups = ($course->groupmode == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context));
 
-    if ($course->id===SITEID) {
-        $PAGE->navbar->ignore_active();
-    }
-
-    $PAGE->navbar->add(get_string('participants'));
     $PAGE->set_title("$course->shortname: ".get_string('participants'));
     $PAGE->set_heading($course->fullname);
     $PAGE->set_pagetype('course-view-' . $course->format);
@@ -345,6 +340,8 @@
 
     if (!isset($hiddenfields['lastaccess'])) {
         $table->sortable(true, 'lastaccess', SORT_DESC);
+    } else {
+        $table->sortable(true, 'firstname', SORT_ASC);
     }
 
     $table->no_sorting('roles');

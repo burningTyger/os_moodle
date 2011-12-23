@@ -89,6 +89,11 @@ class question_engine_data_mapper {
         $record->minfraction = $qa->get_min_fraction();
         $record->flagged = $qa->is_flagged();
         $record->questionsummary = $qa->get_question_summary();
+        if (textlib_get_instance()->strlen($record->questionsummary) > question_bank::MAX_SUMMARY_LENGTH) {
+            // It seems some people write very long quesions! MDL-30760
+            $record->questionsummary = textlib_get_instance()->substr($record->questionsummary,
+                    0, question_bank::MAX_SUMMARY_LENGTH - 3) . '...';
+        }
         $record->rightanswer = $qa->get_right_answer_summary();
         $record->responsesummary = $qa->get_response_summary();
         $record->timemodified = time();
@@ -851,7 +856,11 @@ ORDER BY
      * @return string SQL code for the subquery.
      */
     public function sum_usage_marks_subquery($qubaid) {
-        return "SELECT SUM(qa.maxmark * qas.fraction)
+        // To explain the COALESCE in the following SQL: SUM(lots of NULLs) gives
+        // NULL, while SUM(one 0.0 and lots of NULLS) gives 0.0. We don't want that.
+        // We always want to return a number, so the COALESCE is there to turn the
+        // NULL total into a 0.
+        return "SELECT COALESCE(SUM(qa.maxmark * qas.fraction), 0)
             FROM {question_attempts} qa
             JOIN {question_attempt_steps} qas ON qas.id = (
                 SELECT MAX(summarks_qas.id)

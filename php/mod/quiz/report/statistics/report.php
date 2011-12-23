@@ -54,7 +54,7 @@ class quiz_statistics_report extends quiz_default_report {
     public function display($quiz, $cm, $course) {
         global $CFG, $DB, $OUTPUT, $PAGE;
 
-        $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+        $this->context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
         // Work out the display options.
         $download = optional_param('download', '', PARAM_ALPHA);
@@ -85,16 +85,19 @@ class quiz_statistics_report extends quiz_default_report {
         }
 
         // Find out current groups mode
-        $groupmode = groups_get_activity_groupmode($cm);
-        $currentgroup = groups_get_activity_group($cm, true);
+        $currentgroup = $this->get_current_group($cm, $course, $this->context);
         $nostudentsingroup = false; // True if a group is selected and there is no one in it.
         if (empty($currentgroup)) {
             $currentgroup = 0;
             $groupstudents = array();
 
+        } else if ($currentgroup == self::NO_GROUPS_ALLOWED) {
+            $groupstudents = array();
+            $nostudentsingroup = true;
+
         } else {
             // All users who can attempt quizzes and who are in the currently selected group
-            $groupstudents = get_users_by_capability($context,
+            $groupstudents = get_users_by_capability($this->context,
                     array('mod/quiz:reviewmyattempts', 'mod/quiz:attempt'),
                     '', '', '', '', $currentgroup, '', false);
             if (!$groupstudents) {
@@ -151,7 +154,7 @@ class quiz_statistics_report extends quiz_default_report {
         if (!$this->table->is_downloading()) {
             $this->print_header_and_tabs($cm, $course, $quiz, 'statistics');
 
-            if ($groupmode) {
+            if (groups_get_activity_groupmode($cm)) {
                 groups_print_activity_menu($cm, $reporturl->out());
                 if ($currentgroup && !$groupstudents) {
                     $OUTPUT->notification(get_string('nostudentsingroup', 'quiz_statistics'));
@@ -159,7 +162,7 @@ class quiz_statistics_report extends quiz_default_report {
             }
 
             if (!quiz_questions_in_quiz($quiz->questions)) {
-                echo quiz_no_questions_message($quiz, $cm, $context);
+                echo quiz_no_questions_message($quiz, $cm, $this->context);
             } else if (!$this->table->is_downloading() && $s == 0) {
                 echo $OUTPUT->notification(get_string('noattempts', 'quiz'));
             }
@@ -316,15 +319,33 @@ class quiz_statistics_report extends quiz_default_report {
         echo $OUTPUT->heading(get_string('questionstatistics', 'quiz_statistics'));
         echo html_writer::table($questionstatstable);
     }
+    public function format_text($text, $format, $qa, $component, $filearea, $itemid,
+            $clean = false) {
+        $formatoptions = new stdClass();
+        $formatoptions->noclean = !$clean;
+        $formatoptions->para = false;
+        $text = $qa->rewrite_pluginfile_urls($text, $component, $filearea, $itemid);
+        return format_text($text, $format, $formatoptions);
+    }
+
+    /** @return the result of applying {@link format_text()} to the question text. */
+    public function format_questiontext($qa) {
+        return $this->format_text($this->questiontext, $this->questiontextformat,
+        $qa, 'question', 'questiontext', $this->id);
+    }
 
     /**
      * @param object $question question data.
      * @return string HTML of question text, ready for display.
      */
-    protected function render_question_text($question){
+    protected function render_question_text($question) {
         global $OUTPUT;
-        return $OUTPUT->box(format_text($question->questiontext, $question->questiontextformat,
-                array('overflowdiv' => true)),
+
+        $text = question_rewrite_questiontext_preview_urls($question->questiontext,
+                $this->context->id, 'quiz_statistics', $question->id);
+
+        return $OUTPUT->box(format_text($text, $question->questiontextformat,
+                array('noclean' => true, 'para' => false, 'overflowdiv' => true)),
                 'questiontext boxaligncenter generalbox boxwidthnormal mdl-align');
     }
 
@@ -646,7 +667,7 @@ class quiz_statistics_report extends quiz_default_report {
             $firstattempts = new stdClass();
             $firstattempts->countrecs = 0;
             $firstattempts->total = 0;
-            $firstattempts->average = '-';
+            $firstattempts->average = null;
         }
 
         $allattempts = new stdClass();
