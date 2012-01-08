@@ -139,6 +139,16 @@ abstract class moodleform {
      * @return object moodleform
      */
     function moodleform($action=null, $customdata=null, $method='post', $target='', $attributes=null, $editable=true) {
+        global $CFG;
+        if (empty($CFG->xmlstrictheaders)) {
+            // no standard mform in moodle should allow autocomplete with the exception of user signup
+            // this is valid attribute in html5, sorry, we have to ignore validation errors in legacy xhtml 1.0
+            $attributes = (array)$attributes;
+            if (!isset($attributes['autocomplete'])) {
+                $attributes['autocomplete'] = 'off';
+            }
+        }
+
         if (empty($action)){
             $action = strip_querystring(qualified_me());
         }
@@ -2280,17 +2290,8 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
      * @param mixed $error
      */
     function renderElement(&$element, $required, $error){
-        //manipulate id of all elements before rendering
-        if (!is_null($element->getAttribute('id'))) {
-            $id = $element->getAttribute('id');
-        } else {
-            $id = $element->getName();
-        }
-        //strip qf_ prefix and replace '[' with '_' and strip ']'
-        $id = preg_replace(array('/^qf_|\]/', '/\[/'), array('', '_'), $id);
-        if (strpos($id, 'id_') !== 0){
-            $element->updateAttributes(array('id'=>'id_'.$id));
-        }
+        // Make sure the element has an id.
+        $element->_generateId();
 
         //adding stuff to place holders in template
         //check if this is a group element first
