@@ -472,6 +472,10 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
             }
         }
 
+        if (empty($module->cron)) {
+            $module->cron = 0;
+        }
+
         // all modules must have en lang pack
         if (!is_readable("$fullmod/lang/en/$mod.php")) {
             throw new plugin_defective_exception($component, 'Missing mandatory en language pack.');
@@ -515,7 +519,7 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
                 require_once("$fullmod/db/install.php");
                 // Set installation running flag, we need to recover after exception or error
                 set_config('installrunning', 1, $module->name);
-                $post_install_function = 'xmldb_'.$module->name.'_install';;
+                $post_install_function = 'xmldb_'.$module->name.'_install';
                 $post_install_function();
                 unset_config('installrunning', $module->name);
             }
@@ -549,7 +553,12 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
                 upgrade_mod_savepoint($result, $module->version, $mod, false);
             }
 
-        /// Upgrade various components
+            // update cron flag if needed
+            if ($currmodule->cron != $module->cron) {
+                $DB->set_field('modules', 'cron', $module->cron, array('name' => $module->name));
+            }
+
+            // Upgrade various components
             update_capabilities($component);
             log_update_descriptions($component);
             external_update_descriptions($component);
