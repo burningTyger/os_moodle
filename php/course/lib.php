@@ -147,6 +147,7 @@ function build_mnet_logs_array($hostid, $course, $user=0, $date=0, $order="l.tim
     $groupid = 0;
 
     $joins = array();
+    $where = '';
 
     $qry = "SELECT l.*, u.firstname, u.lastname, u.picture
               FROM {mnet_log} l
@@ -1086,6 +1087,7 @@ function get_array_of_activities($courseid) {
                    if (empty($rawmods[$seq])) {
                        continue;
                    }
+                   $mod[$seq] = new stdClass();
                    $mod[$seq]->id               = $rawmods[$seq]->instance;
                    $mod[$seq]->cm               = $rawmods[$seq]->id;
                    $mod[$seq]->mod              = $rawmods[$seq]->modname;
@@ -2111,6 +2113,7 @@ function print_whole_category_list($category=NULL, $displaylist=NULL, $parentsli
         }
 
     } else {
+        $category = new stdClass();
         $category->id = "0";
     }
 
@@ -2478,7 +2481,7 @@ function print_course($course, $highlightterms = '') {
     echo html_writer::end_tag('div'); // End of info div
 
     echo html_writer::start_tag('div', array('class'=>'summary'));
-    $options = NULL;
+    $options = new stdClass();
     $options->noclean = true;
     $options->para = false;
     $options->overflowdiv = true;
@@ -2625,7 +2628,7 @@ function print_remote_course($course, $width="100%") {
         . format_string($course->cat_name) . ' : '
         . format_string($course->shortname). '</div>';
     echo '</div><div class="summary">';
-    $options = NULL;
+    $options = new stdClass();
     $options->noclean = true;
     $options->para = false;
     $options->overflowdiv = true;
@@ -3065,11 +3068,12 @@ function make_editing_buttons($mod, $absolute=false, $moveselect=true, $indent=-
         $str->duplicate      = get_string("duplicate");
         $str->hide           = get_string("hide");
         $str->show           = get_string("show");
-        $str->clicktochange  = get_string("clicktochange");
-        $str->forcedmode     = get_string("forcedmode");
-        $str->groupsnone     = get_string("groupsnone");
-        $str->groupsseparate = get_string("groupsseparate");
-        $str->groupsvisible  = get_string("groupsvisible");
+        $str->groupsnone     = get_string('clicktochangeinbrackets', 'moodle', get_string("groupsnone"));
+        $str->groupsseparate = get_string('clicktochangeinbrackets', 'moodle', get_string("groupsseparate"));
+        $str->groupsvisible  = get_string('clicktochangeinbrackets', 'moodle', get_string("groupsvisible"));
+        $str->forcedgroupsnone     = get_string('forcedmodeinbrackets', 'moodle', get_string("groupsnone"));
+        $str->forcedgroupsseparate = get_string('forcedmodeinbrackets', 'moodle', get_string("groupsseparate"));
+        $str->forcedgroupsvisible  = get_string('forcedmodeinbrackets', 'moodle', get_string("groupsvisible"));
         $sesskey = sesskey();
     }
 
@@ -3103,28 +3107,31 @@ function make_editing_buttons($mod, $absolute=false, $moveselect=true, $indent=-
     if ($mod->groupmode !== false) {
         if ($mod->groupmode == SEPARATEGROUPS) {
             $grouptitle = $str->groupsseparate;
+            $forcedgrouptitle = $str->forcedgroupsseparate;
             $groupclass = 'editing_groupsseparate';
             $groupimage = $OUTPUT->pix_url('t/groups') . '';
             $grouplink  = $path.'/mod.php?id='.$mod->id.'&amp;groupmode=0&amp;sesskey='.$sesskey;
         } else if ($mod->groupmode == VISIBLEGROUPS) {
             $grouptitle = $str->groupsvisible;
+            $forcedgrouptitle = $str->forcedgroupsvisible;
             $groupclass = 'editing_groupsvisible';
             $groupimage = $OUTPUT->pix_url('t/groupv') . '';
             $grouplink  = $path.'/mod.php?id='.$mod->id.'&amp;groupmode=1&amp;sesskey='.$sesskey;
         } else {
             $grouptitle = $str->groupsnone;
+            $forcedgrouptitle = $str->forcedgroupsnone;
             $groupclass = 'editing_groupsnone';
             $groupimage = $OUTPUT->pix_url('t/groupn') . '';
             $grouplink  = $path.'/mod.php?id='.$mod->id.'&amp;groupmode=2&amp;sesskey='.$sesskey;
         }
         if ($mod->groupmodelink) {
-            $groupmode = '<a class="'.$groupclass.'" title="'.$grouptitle.' ('.$str->clicktochange.')" href="'.$grouplink.'">'.
+            $groupmode = '<a class="'.$groupclass.'" title="'.$grouptitle.'" href="'.$grouplink.'">'.
                          '<img src="'.$groupimage.'" class="iconsmall" '.
                          'alt="'.$grouptitle.'" /></a>';
         } else {
-            $groupmode = '<img title="'.$grouptitle.' ('.$str->forcedmode.')" '.
+            $groupmode = '<img title="'.$forcedgrouptitle.'"'.
                          ' src="'.$groupimage.'" class="iconsmall" '.
-                         'alt="'.$grouptitle.'" />';
+                         'alt="'.$forcedgrouptitle.'" />';
         }
     } else {
         $groupmode = "";

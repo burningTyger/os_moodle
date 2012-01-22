@@ -946,7 +946,7 @@ function message_add_contact($contactid, $blocked=0) {
 
     } else {
     /// new contact record
-        unset($contact);
+        $contact = new stdClass();
         $contact->userid = $USER->id;
         $contact->contactid = $contactid;
         $contact->blocked = $blocked;
@@ -1342,6 +1342,7 @@ function message_contact_link($userid, $linktype='add', $return=false, $script=n
     }
 
     if (empty($str->blockcontact)) {
+       $str = new stdClass();
        $str->blockcontact   =  get_string('blockcontact', 'message');
        $str->unblockcontact =  get_string('unblockcontact', 'message');
        $str->removecontact  =  get_string('removecontact', 'message');
@@ -1645,7 +1646,7 @@ function message_search($searchterms, $fromme=true, $tome=true, $courseid='none'
 
     /// The keys may be duplicated in $m_read and $m_unread so we can't
     /// do a simple concatenation
-    $message = array();
+    $messages = array();
     foreach ($m_read as $m) {
         $messages[] = $m;
     }
