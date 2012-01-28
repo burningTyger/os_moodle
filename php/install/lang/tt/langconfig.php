@@ -30,6 +30,4 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['parentlanguage'] = 'de_du';
-$string['thisdirection'] = 'ltr';
-$string['thislanguage'] = 'Deutsch - Kids';
+$string['thislanguage'] = 'татар теле';

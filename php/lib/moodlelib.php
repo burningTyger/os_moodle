@@ -1076,7 +1076,7 @@ function get_config($plugin, $name = NULL) {
         if ($localcfg) {
             return (object)$localcfg;
         } else {
-            return null;
+            return new stdClass();
         }
 
     } else {
@@ -1973,7 +1973,7 @@ function get_timezone_record($timezonename) {
     }
 
     return $cache[$timezonename] = $DB->get_record_sql('SELECT * FROM {timezone}
-                                                        WHERE name = ? ORDER BY year DESC', array($timezonename), true);
+                                                        WHERE name = ? ORDER BY year DESC', array($timezonename), IGNORE_MULTIPLE);
 }
 
 /**
@@ -4625,6 +4625,17 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
     // skip mail to suspended users
     if ((isset($user->auth) && $user->auth=='nologin') or (isset($user->suspended) && $user->suspended)) {
         return true;
+    }
+
+    if (!validate_email($user->email)) {
+        // we can not send emails to invalid addresses - it might create security issue or confuse the mailer
+        $invalidemail = "User $user->id (".fullname($user).") email ($user->email) is invalid! Not sending.";
+        error_log($invalidemail);
+        if (CLI_SCRIPT) {
+            // do not print this in standard web pages
+            mtrace($invalidemail);
+        }
+        return false;
     }
 
     if (over_bounce_threshold($user)) {
