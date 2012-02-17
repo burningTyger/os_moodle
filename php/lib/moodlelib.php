@@ -3470,6 +3470,12 @@ function delete_user($user) {
     // last course access not necessary either
     $DB->delete_records('user_lastaccess', array('userid'=>$user->id));
 
+    // remove all user tokens
+    $DB->delete_records('external_tokens', array('userid'=>$user->id));
+
+    // unauthorise the user for all services
+    $DB->delete_records('external_services_users', array('userid'=>$user->id));
+
     // now do a final accesslib cleanup - removes all role assignments in user context and context itself
     delete_context(CONTEXT_USER, $user->id);
 
@@ -7077,7 +7083,6 @@ function get_core_subsystems() {
             'license'     => NULL,
             'mathslib'    => NULL,
             'message'     => 'message',
-            'message'     => 'message',
             'mimetypes'   => NULL,
             'mnet'        => 'mnet',
             'moodle.org'  => NULL, // the dot is nasty, watch out! should be renamed to moodleorg
@@ -7359,7 +7364,7 @@ function plugin_callback($type, $name, $feature, $action, $params = null, $defau
  * @return mixed
  */
 function component_callback($component, $function, array $params = array(), $default = null) {
-    global $CFG; // this is needed for require_once() bellow
+    global $CFG; // this is needed for require_once() below
 
     $cleancomponent = clean_param($component, PARAM_SAFEDIR);
     if (empty($cleancomponent)) {
@@ -7731,7 +7736,8 @@ function get_device_type() {
          return 'tablet';
     }
 
-    if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6.') !== false) {
+    // Safe way to check for IE6 and not get false positives for some IE 7/8 users
+    if (substr($_SERVER['HTTP_USER_AGENT'], 0, 34) === 'Mozilla/4.0 (compatible; MSIE 6.0;') {
         return 'legacy';
     }
 
