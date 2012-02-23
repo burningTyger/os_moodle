@@ -5444,7 +5444,7 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     if ($oldversion < 2010102700) {
 
         $table = new xmldb_table('post');
-        $field = new xmldb_field('uniquehash', XMLDB_TYPE_CHAR, '128', null, XMLDB_NOTNULL, null, null, 'content');
+        $field = new xmldb_field('uniquehash', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'content');
         // Launch change of precision for field name
         $dbman->change_field_precision($table, $field);
 
@@ -5788,24 +5788,6 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         }
 
         upgrade_main_savepoint(true, 2011011406);
-    }
-
-    if ($oldversion < 2011011407) {
-        // Check if we need to fix post.uniquehash
-        $columns = $DB->get_columns('my_pages');
-        if (array_key_exists('uniquehash', $columns) && $columns['uniquehash']->max_length != 128) {
-            // Fix discrepancies in the post table after upgrade from 1.9
-            $table = new xmldb_table('post');
-
-            // Uniquehash should be 128 chars
-            // Fixed in earlier upgrade code
-            $field = new xmldb_field('uniquehash', XMLDB_TYPE_CHAR, 128, null, XMLDB_NOTNULL, null, null, 'content');
-            if ($dbman->field_exists($table, $field)) {
-                $dbman->change_field_precision($table, $field);
-            }
-        }
-
-        upgrade_main_savepoint(true, 2011011407);
     }
 
     if ($oldversion < 2011011408) {
@@ -6722,6 +6704,53 @@ FROM
 
         // Main savepoint reached
         upgrade_main_savepoint(true, 2011070103.04);
+    }
+
+    if ($oldversion < 2011070104.08) {
+        // Check if we need to fix post.uniquehash
+        $columns = $DB->get_columns('post');
+        if (array_key_exists('uniquehash', $columns) && $columns['uniquehash']->max_length != 255) {
+            // Fix discrepancies in the post table after upgrade from 1.9
+            $table = new xmldb_table('post');
+
+            // Uniquehash should be 255 chars, fixed in earlier upgrade code
+            $field = new xmldb_field('uniquehash', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL, null, null, 'content');
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->change_field_precision($table, $field);
+            }
+        }
+
+        upgrade_main_savepoint(true, 2011070104.08);
+    }
+
+    if ($oldversion < 2011070104.09) {
+        // Somewhere before 1.9 summary and content column in post table were not null. In 1.9+
+        // not null became false.
+        $columns = $DB->get_columns('post');
+
+        // Fix discrepancies in summary field after upgrade from 1.9
+        if (array_key_exists('summary', $columns) && $columns['summary']->not_null != false) {
+            $table = new xmldb_table('post');
+            $summaryfield = new xmldb_field('summary', XMLDB_TYPE_TEXT, 'big', null, null, null, null, 'subject');
+
+            if ($dbman->field_exists($table, $summaryfield)) {
+                $dbman->change_field_notnull($table, $summaryfield);
+            }
+
+        }
+
+        // Fix discrepancies in content field after upgrade from 1.9
+        if (array_key_exists('content', $columns) && $columns['content']->not_null != false) {
+            $table = new xmldb_table('post');
+            $contentfield = new xmldb_field('content', XMLDB_TYPE_TEXT, 'big', null, null, null, null, 'summary');
+
+            if ($dbman->field_exists($table, $contentfield)) {
+                $dbman->change_field_notnull($table, $contentfield);
+            }
+
+        }
+
+        upgrade_main_savepoint(true, 2011070104.09);
     }
 
     return true;
