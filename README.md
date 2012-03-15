@@ -35,6 +35,21 @@ Because the Moodle team usually updates Moodle weekly be sure to update your app
 and update your Openshift app:
 
     git push openshift master
+    
+Because Moodle depends on cron jobs to finish up certain tasks it is recommended to add a cron job to your Openshift repository:
+
+    rhc-ctl-app -a moodle -e add-cron-1.4 -l yourlogin
+    
+This will add the cron cartridge on the server side. In your repo you will have to add the following things:
+
+    mkdir -p .openshift/cron/hourly
+    echo 'wget -q -O /dev/null https://moodle-xxx.rhcloud.com/admin/cron.php' > .openshift/cron/hourly/cron.sh
+    
+Replace `xxx`in the address with your Openshift domain and then commit and push the changes to the server:
+
+    git commit -am 'add cron jobs'
+    git push
+    
 
 *Have fun*
 
@@ -112,7 +127,7 @@ Once this is finished we need to add all the new files and commit it to the new 
 
 Now we can push to Openshift and be ready for installing Moodle:
 
-	git push
+	git push -f
 
 You should now be able to visit your new app and start the install script.
 
@@ -129,6 +144,20 @@ This will update Moodle but you still need to update your app as well:
 
 And then push everything to Openshift:
 
+    git push
+    
+Because Moodle depends on cron jobs to finish up certain tasks it is recommended to add a cron job to your Openshift repository:
+
+    rhc-ctl-app -a moodle -e add-cron-1.4 -l yourlogin
+    
+This will add the cron cartridge on the server side. In your repo you will have to add the following things:
+
+    mkdir -p .openshift/cron/hourly
+    echo 'wget -q -O /dev/null https://moodle-xxx.rhcloud.com/admin/cron.php' > .openshift/cron/hourly/cron.sh
+    
+Replace `xxx`in the address with your Openshift domain and then commit and push the changes to the server:
+
+    git commit -am 'add cron jobs'
     git push
 
 *Have fun.*
