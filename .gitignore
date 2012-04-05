@@ -1,3 +1,4 @@
 php.bak/*
 php/.gitignore
 .gitattributes
+php/config-dist.php
