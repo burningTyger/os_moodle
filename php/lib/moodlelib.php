@@ -1798,6 +1798,15 @@ function usergetdate($time, $timezone=99) {
         $getdate['seconds']
     ) = explode('_', $datestring);
 
+    // set correct datatype to match with getdate()
+    $getdate['seconds'] = (int)$getdate['seconds'];
+    $getdate['yday'] = (int)$getdate['yday'] - 1; // gettime returns 0 through 365
+    $getdate['year'] = (int)$getdate['year'];
+    $getdate['mon'] = (int)$getdate['mon'];
+    $getdate['wday'] = (int)$getdate['wday'];
+    $getdate['mday'] = (int)$getdate['mday'];
+    $getdate['hours'] = (int)$getdate['hours'];
+    $getdate['minutes']  = (int)$getdate['minutes'];
     return $getdate;
 }
 
@@ -8106,7 +8115,12 @@ function upgrade_set_timeout($max_execution_time=300) {
         return;
     }
 
-    set_time_limit($max_execution_time);
+    if (CLI_SCRIPT) {
+        // there is no point in timing out of CLI scripts, admins can stop them if necessary
+        set_time_limit(0);
+    } else {
+        set_time_limit($max_execution_time);
+    }
     set_config('upgraderunning', $expected_end); // keep upgrade locked until this time
 }
 
