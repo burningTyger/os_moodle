@@ -1237,6 +1237,10 @@ function calendar_set_filters(array $courseeventsfrom, $ignorefilters = false) {
     $user = false;
     $group = false;
 
+    // capabilities that allow seeing group events from all groups
+    // TODO: rewrite so that moodle/calendar:manageentries is not necessary here
+    $allgroupscaps = array('moodle/site:accessallgroups', 'moodle/calendar:manageentries');
+
     $isloggedin = isloggedin();
 
     if ($ignorefilters || calendar_show_event_type(CALENDAR_EVENT_COURSE)) {
@@ -1262,26 +1266,35 @@ function calendar_set_filters(array $courseeventsfrom, $ignorefilters = false) {
 
     if (!empty($courseeventsfrom) && (calendar_show_event_type(CALENDAR_EVENT_GROUP) || $ignorefilters)) {
 
-        if (!empty($CFG->calendar_adminseesall) && has_capability('moodle/calendar:manageentries', get_system_context())) {
-            $group = true;
-        } else if ($isloggedin) {
-            $groupids = array();
-
-            // We already have the courses to examine in $courses
-            // For each course...
-            foreach ($courseeventsfrom as $courseid => $course) {
-                // If the user is an editing teacher in there,
-                if (!empty($USER->groupmember[$course->id])) {
-                    // We've already cached the users groups for this course so we can just use that
-                    $groupids = array_merge($groupids, $USER->groupmember[$course->id]);
-                } else if (($course->groupmode != NOGROUPS || !$course->groupmodeforce) && has_capability('moodle/calendar:manageentries', get_context_instance(CONTEXT_COURSE, $course->id))) {
-                    // If this course has groups, show events from all of them
-                    $coursegroups = groups_get_user_groups($course->id, $USER->id);
-                    $groupids = array_merge($groupids, $coursegroups['0']);
-                }
+        if (count($courseeventsfrom)==1) {
+            $course = reset($courseeventsfrom);
+            if (has_any_capability($allgroupscaps, get_context_instance(CONTEXT_COURSE, $course->id))) {
+                $coursegroups = groups_get_all_groups($course->id, 0, 0, 'g.id');
+                $group = array_keys($coursegroups);
             }
-            if (!empty($groupids)) {
-                $group = $groupids;
+        }
+        if ($group === false) {
+            if (!empty($CFG->calendar_adminseesall) && has_any_capability($allgroupscaps, get_system_context())) {
+                $group = true;
+            } else if ($isloggedin) {
+                $groupids = array();
+
+                // We already have the courses to examine in $courses
+                // For each course...
+                foreach ($courseeventsfrom as $courseid => $course) {
+                    // If the user is an editing teacher in there,
+                    if (!empty($USER->groupmember[$course->id])) {
+                        // We've already cached the users groups for this course so we can just use that
+                        $groupids = array_merge($groupids, $USER->groupmember[$course->id]);
+                    } else if ($course->groupmode != NOGROUPS || !$course->groupmodeforce) {
+                        // If this course has groups, show events from all of those related to the current user
+                        $coursegroups = groups_get_user_groups($course->id, $USER->id);
+                        $groupids = array_merge($groupids, $coursegroups['0']);
+                    }
+                }
+                if (!empty($groupids)) {
+                    $group = $groupids;
+                }
             }
         }
     }
@@ -1351,10 +1364,11 @@ function calendar_get_default_courses() {
     $courses = array();
     if (!empty($CFG->calendar_adminseesall) && has_capability('moodle/calendar:manageentries', get_context_instance(CONTEXT_SYSTEM))) {
         list ($select, $join) = context_instance_preload_sql('c.id', CONTEXT_COURSE, 'ctx');
-        $sql = "SELECT DISTINCT c.* $select
+        $sql = "SELECT c.* $select
                   FROM {course} c
-                  JOIN {event} e ON e.courseid = c.id
-                  $join";
+                  $join
+                  WHERE EXISTS (SELECT 1 FROM {event} e WHERE e.courseid = c.id)
+                  ";
         $courses = $DB->get_records_sql($sql, null, 0, 20);
         foreach ($courses as $course) {
             context_instance_preload($course);
@@ -1552,6 +1566,7 @@ function calendar_get_allowed_types(&$allowed, $course = null) {
         }
         if ($course->id != SITEID) {
             $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
+            $allowed->user = has_capability('moodle/calendar:manageownentries', $coursecontext);
 
             if (has_capability('moodle/calendar:manageentries', $coursecontext)) {
                 $allowed->courses = array($course->id => 1);
@@ -2086,6 +2101,20 @@ class calendar_event {
 
         // Delete the event
         $DB->delete_records('event', array('id'=>$this->properties->id));
+
+        // If we are deleting parent of a repeated event series, promote the next event in the series as parent
+        if (($this->properties->id == $this->properties->repeatid) && !$deleterepeated) {
+            $newparent = $DB->get_field_sql("SELECT id from {event} where repeatid = ? order by id ASC", array($this->properties->id), IGNORE_MULTIPLE);
+            if (!empty($newparent)) {
+                $DB->execute("UPDATE {event} SET repeatid = ? WHERE repeatid = ?", array($newparent, $this->properties->id));
+                // Get all records where the repeatid is the same as the event being removed
+                $events = $DB->get_records('event', array('repeatid' => $newparent));
+                // For each of the returned events trigger the event_update hook.
+                foreach ($events as $event) {
+                    self::calendar_event_hook('update_event', array($event, false));
+                }
+            }
+        }
 
         // If the editor context hasn't already been set then set it now
         if ($this->editorcontext === null) {

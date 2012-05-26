@@ -613,7 +613,7 @@ function forum_cron() {
 
                 $shortname = format_string($course->shortname, true, array('context' => get_context_instance(CONTEXT_COURSE, $course->id)));
 
-                $postsubject = "$shortname: ".format_string($post->subject,true);
+                $postsubject = html_to_text("$shortname: ".format_string($post->subject, true));
                 $posttext = forum_make_mail_text($course, $cm, $forum, $discussion, $post, $userfrom, $userto);
                 $posthtml = forum_make_mail_html($course, $cm, $forum, $discussion, $post, $userfrom, $userto);
 
@@ -1288,8 +1288,6 @@ function forum_print_overview($courses,&$htmlarray) {
     }
 
     $strforum = get_string('modulename','forum');
-    $strnumunread = get_string('overviewnumunread','forum');
-    $strnumpostssince = get_string('overviewnumpostssince','forum');
 
     foreach ($forums as $forum) {
         $str = '';
@@ -1308,9 +1306,9 @@ function forum_print_overview($courses,&$htmlarray) {
             $str .= '<div class="overview forum"><div class="name">'.$strforum.': <a title="'.$strforum.'" href="'.$CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id.'">'.
                 $forum->name.'</a></div>';
             $str .= '<div class="info"><span class="postsincelogin">';
-            $str .= $count.' '.$strnumpostssince."</span>";
+            $str .= get_string('overviewnumpostssince', 'forum', $count)."</span>";
             if (!empty($showunread)) {
-                $str .= '<div class="unreadposts">'.$thisunread .' '.$strnumunread.'</div>';
+                $str .= '<div class="unreadposts">'.get_string('overviewnumunread', 'forum', $thisunread).'</div>';
             }
             $str .= '</div></div>';
         }
