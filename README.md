@@ -1,3 +1,6 @@
+#Final Notice
+Don't use this repo use the newer one over at [https://github.com/burningTyger/openshift_moodle](https://github.com/burningTyger/openshift_moodle) which defaults to the latest stable Moodle version and is a lot easier to keep up to date.
+
 ##Notice
 This Moodle repo served well for Moodle 2.1 which has now reached its end of life. I had a hard time upgrading my own Moodle install on Openshift because Moodle is such a pita when it comes to updates. As it is right now I'd have to tag the last release of this repo's 2.1 and then let you upgrade commit by commit until you have reached 2.3. I don't feel that this is a good way for either me or you. There will most certainly be errors. I find it hard to test and you'll be very unhappy with me. I recommend using a fresh install with a Moodle submodule and individual config files. That should work. If you have a working solution I'll be more than happy to link to your repo. So, no more updates. Thank you for using my Moodle repo.
 
